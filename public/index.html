@@ -1,0 +1,119 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Exam Prep &amp; Skill Scheduler</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap">
+<style>
+:root{--bg:#F1F5F9;--card:#fff;--ink:#14213D;--mut:#5B6577;--line:#DDE3EA;--acc:#FCA311;--teal:#1B998B;--red:#D9480F;--hd:#14213D;--hdt:#fff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0E1424;--card:#172038;--ink:#E8ECF4;--mut:#9AA5BA;--line:#2A3552;--hd:#0A0F1C}}
+:root[data-theme="dark"]{--bg:#0E1424;--card:#172038;--ink:#E8ECF4;--mut:#9AA5BA;--line:#2A3552;--hd:#0A0F1C}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Bricolage Grotesque",system-ui,sans-serif}
+button,input,select{font:inherit;color:inherit}
+header{background:var(--hd);color:var(--hdt);padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+header h1{margin:0;font-size:1.15rem;font-weight:800}header span{color:#b9c3d8;font-size:.9rem}
+.q{background:var(--acc);color:#14213D;padding:8px 16px;font-weight:600;cursor:pointer}
+.mq{background:#0b1a33;color:#fff;overflow:hidden;white-space:nowrap;padding:8px 0;border-bottom:3px solid var(--acc)}
+.mq span{display:inline-block;padding-left:100%;animation:mq 40s linear infinite}
+@keyframes mq{to{transform:translateX(-100%)}}
+@media (prefers-reduced-motion:reduce){.mq{white-space:normal;padding:8px 16px}.mq span{animation:none;padding:0}}
+nav{display:flex;gap:6px;padding:10px 16px;overflow-x:auto}
+nav button{border:1px solid var(--line);background:var(--card);padding:6px 14px;border-radius:99px;cursor:pointer;white-space:nowrap}
+nav button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+main{max-width:920px;margin:0 auto;padding:0 16px 40px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;margin:0 0 14px}
+h2{font-size:1.25rem;margin:8px 0 12px}h3{margin:0 0 8px;font-size:1.05rem}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.sp{margin-left:auto}
+.item{display:flex;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.item:first-of-type{border-top:0}.item .n{flex:1;min-width:0}.mut{color:var(--mut);font-size:.85rem}
+button{cursor:pointer}.pri{background:var(--acc);color:#14213D;border:0;border-radius:8px;padding:8px 14px;font-weight:600}
+.ghost{background:none;border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+.sm{padding:3px 8px;font-size:.8rem}.del{color:var(--red)}
+.done{text-decoration:line-through;color:var(--mut)}
+.sec{margin:10px 0 0;padding-left:10px;border-left:3px solid var(--teal)}
+.cat.skill{border-left:5px solid var(--acc)}.cat.exam{border-left:5px solid var(--teal)}
+.bar{height:10px;background:var(--line);border-radius:9px;overflow:hidden;flex:1;min-width:80px}.bar i{display:block;height:100%;background:var(--teal)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.dn{width:150px;height:150px}.ct{font-size:20px;font-weight:800;fill:var(--ink)}
+.lg{display:flex;gap:6px;align-items:center;font-size:.85rem}.lg b{width:10px;height:10px;border-radius:2px;display:inline-block}
+.login{max-width:380px;margin:8vh auto;padding:0 16px}.login input{width:100%;padding:10px;margin:6px 0;border:1px solid var(--line);border-radius:8px;background:var(--card)}
+.err{color:var(--red);min-height:1.4em;font-size:.9rem}
+.ov{position:fixed;inset:0;background:#0008;display:grid;place-items:center;padding:16px;z-index:9}
+.dlg{background:var(--card);padding:18px;border-radius:12px;width:100%;max-width:380px}.dlg label{display:block;margin:8px 0}.dlg input,.dlg select{width:100%;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+.dlg .row{justify-content:flex-end;margin-top:12px}
+details summary{cursor:pointer;font-weight:600}
+</style></head><body>
+<div id="root"></div>
+<script src="config.js"></script>
+<script>
+let token=null;try{token=localStorage.getItem('pe_tok')}catch(e){}
+async function api(m,p,b){const r=await fetch((window.API_BASE||'')+p,{method:m,headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},body:b?JSON.stringify(b):undefined});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||'Request failed');return j}
+const $=s=>document.querySelector(s);
+const ymd=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const P=s=>{const[a,b,c]=s.split('-');return new Date(+a,+b-1,+c)};
+const add=(s,n)=>{const d=P(s);d.setDate(d.getDate()+n);return ymd(d)};
+const TODAY=ymd(new Date());const uid=()=>Math.random().toString(36).slice(2,9);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const REV=[1,3,7,15,25,30];
+const QUOTES=["Hard work beats talent when talent doesn't work hard.","Do it now. Tired is temporary, regret is not.","Discipline is choosing what you want most over what you want now.","One hour of study today is one step closer to the job.","Laziness feels good today and costs you tomorrow.","Small daily effort wins over occasional big effort.","Your future self is watching. Make them proud.","Don't wait for motivation. Start, and it will follow."];
+let me=null,admin=false,adminUsers=[],data=[],view='today',qi=new Date().getDate()%QUOTES.length;
+let tm;const save=()=>{clearTimeout(tm);tm=setTimeout(()=>api('PUT','/api/data',{data}).catch(()=>{}),500)};
+function seed(){let i=0;const mk=n=>({id:uid(),name:n,done:false,date:add(TODAY,Math.floor(i++/2)),doneDate:null,rev:[]});
+const S=[['RRB NTPC','exam',{'Arithmetic':['Percentages','Ratio & Proportion','Time & Work'],'Reasoning':['Series','Coding-Decoding'],'General Studies':['Indian Polity','Geography']}],['SSC CGL','exam',{'Quant':['Number System','Algebra'],'English':['Grammar','Vocabulary']}],['Banking','exam',{'Reasoning':['Puzzles','Seating Arrangement'],'Data Interpretation':['Tables','Charts']}],['Java','skill',{'Core Java':['OOP Basics','Collections']}],['Python','skill',{'Basics':['Data Types','Functions']}],['HTML','skill',{'Web Basics':['Tags & Forms','CSS Layout']}],['PowerPoint','skill',{'Slides':['Design Basics','Animations']}]];
+return S.map(([n,t,x])=>({id:uid(),name:n,type:t,secs:Object.entries(x).map(([sn,ts])=>({id:uid(),name:sn,topics:ts.map(mk)}))}))}
+async function auth(mode){const e=$('#err');try{const b={username:$('#u').value.trim().toLowerCase(),password:$('#p').value};if(mode==='reg')b.email=$('#em').value.trim();const r=await api('POST',mode==='reg'?'/api/register':'/api/login',b);token=r.token;try{localStorage.setItem('pe_tok',token)}catch(x){}await boot()}catch(x){e.textContent=x.message}}
+function loginUI(){$('#root').innerHTML=`<div class="login"><h1>Public Exams Preparation &amp; Personal Skill Scheduler</h1><p class="mut">Log in to see today's topics. New here? Add your email and create an account. The first account becomes the admin.</p><input id="u" placeholder="Username (letters, numbers, _)" autocomplete="username"><input id="em" type="email" placeholder="Email for reminders (new accounts only)" autocomplete="email"><input id="p" type="password" placeholder="Password (8+ characters)" autocomplete="current-password"><div class="err" id="err"></div><div class="row"><button class="pri" onclick="auth('in')">Log in</button><button class="ghost" onclick="auth('reg')">Create account</button></div></div>`}
+async function boot(){if(!token)return loginUI();try{const r=await api('GET','/api/data');me=r.username;admin=r.admin;data=r.data;if(!data){data=seed();save()}}catch(e){token=null;try{localStorage.removeItem('pe_tok')}catch(x){}return loginUI()}view='today';
+$('#root').innerHTML=`<header><h1>Exam Prep &amp; Skill Scheduler</h1><div class="row"><span>${esc(me)}</span><button class="ghost sm" data-a="out" style="color:#fff;border-color:#fff5">Log out</button></div></header><div class="q" id="q" data-a="quote"></div><div class="mq"><span id="mq"></span></div><nav id="nav"></nav><main id="view"></main>`;render()}
+const isAdmin=()=>admin;
+const all=(d=data)=>d.flatMap(c=>c.secs.flatMap(s=>s.topics.map(t=>({c,s,t}))));
+const revs=()=>all().filter(x=>x.t.done).flatMap(x=>REV.filter(n=>!x.t.rev.includes(n)&&TODAY>=add(x.t.doneDate,n)).slice(0,1).map(n=>({...x,n})));
+const pct=(l)=>l.length?Math.round(l.filter(x=>x.t.done).length/l.length*100):0;
+function ask(title,fields=[],init={},ok='Save'){return new Promise(r=>{const d=document.createElement('div');d.className='ov';
+d.innerHTML=`<form class="dlg"><h3>${esc(title)}</h3>${fields.map(f=>`<label>${f.l}${f.o?`<select name="${f.k}">${f.o.map(o=>`<option ${init[f.k]===o?'selected':''}>${o}</option>`).join('')}</select>`:`<input name="${f.k}" type="${f.t||'text'}" value="${esc(init[f.k]||'')}" ${f.t==='date'?`max="${add(TODAY,183)}"`:'required'}>`}</label>`).join('')}<div class="row"><button type="button" class="ghost">Cancel</button><button class="pri">${ok}</button></div></form>`;
+document.body.appendChild(d);const fm=d.firstChild;const x=v=>{d.remove();r(v)};
+fm.onsubmit=e=>{e.preventDefault();x(Object.fromEntries(new FormData(fm)))};fm.querySelector('.ghost').onclick=()=>x(null);
+const i=fm.querySelector('input,select');if(i)i.focus()})}
+document.addEventListener('click',async e=>{const b=e.target.closest('[data-a]');if(!b)return;const{a,c,s,t,n}=b.dataset;
+const C=data.find(x=>x.id===c),S=C?.secs.find(x=>x.id===s),T=S?.topics.find(x=>x.id===t);let v;
+if(a==='out'){token=null;try{localStorage.removeItem('pe_tok')}catch(x){}return loginUI()}
+if(a==='tab'){view=c;if(c==='admin')adminUsers=await api('GET','/api/admin/users')}
+else if(a==='quote'){qi=(qi+1)%QUOTES.length}
+else if(a==='addCat'){v=await ask('Add category',[{k:'name',l:'Name (e.g. RRB Group D)'},{k:'type',l:'Type',o:['exam','skill']}]);if(!v)return;data.push({id:uid(),name:v.name,type:v.type,secs:[]})}
+else if(a==='editCat'){v=await ask('Edit category',[{k:'name',l:'Name'},{k:'type',l:'Type',o:['exam','skill']}],C);if(!v)return;Object.assign(C,v)}
+else if(a==='delCat'){if(!await ask('Delete "'+C.name+'" and everything in it?',[],{},'Delete'))return;data=data.filter(x=>x!==C)}
+else if(a==='addSec'){v=await ask('Add sub-topic section',[{k:'name',l:'Name (e.g. Arithmetic)'}]);if(!v)return;C.secs.push({id:uid(),name:v.name,topics:[]})}
+else if(a==='editSec'){v=await ask('Edit section',[{k:'name',l:'Name'}],S);if(!v)return;S.name=v.name}
+else if(a==='delSec'){if(!await ask('Delete section "'+S.name+'"?',[],{},'Delete'))return;C.secs=C.secs.filter(x=>x!==S)}
+else if(a==='addTopic'){v=await ask('Add topic',[{k:'name',l:'Topic'},{k:'date',l:'Plan for date',t:'date'}],{date:TODAY});if(!v)return;S.topics.push({id:uid(),name:v.name,date:v.date,done:false,doneDate:null,rev:[]})}
+else if(a==='editTopic'){v=await ask('Edit topic',[{k:'name',l:'Topic'},{k:'date',l:'Plan for date',t:'date'}],T);if(!v)return;T.name=v.name;T.date=v.date}
+else if(a==='delTopic'){S.topics=S.topics.filter(x=>x!==T)}
+else if(a==='mail'){try{await api('POST','/api/remind-now');await ask('Email sent. Check your inbox.',[],{},'OK')}catch(x){await ask(x.message,[],{},'OK')}return}
+else if(a==='learn'){T.done=!T.done;T.doneDate=T.done?TODAY:null;T.rev=[]}
+else if(a==='rev'){T.rev.push(+n)}
+else if(a==='spread'){if(!await ask('Spread all unfinished topics evenly over the next 6 months?',[],{},'Spread'))return;const l=all().filter(x=>!x.t.done);l.forEach((x,i)=>x.t.date=add(TODAY,Math.floor(i*180/Math.max(l.length,1))))}
+else if(a==='udel'){if(!await ask('Delete this user and their data?',[],{},'Delete'))return;await api('DELETE','/api/admin/users/'+c);adminUsers=await api('GET','/api/admin/users')}
+save();render()});
+function render(){if(!$('#view'))return;$('#q').textContent='“'+QUOTES[qi]+'”';
+const a=all().filter(x=>!x.t.done&&x.t.date&&x.t.date<=TODAY).map(x=>x.t.name+' ('+x.c.name+')'),r=revs().map(x=>'Revise '+x.t.name+' (day '+x.n+')'),p=[...a,...r];
+$('#mq').textContent=p.length?'Today: '+p.join('   •   '):'Nothing due today. Add a topic or pull one forward from the planner.';
+const tabs=[['today','Today'],['subjects','Subjects'],['planner','6-month plan'],['progress','Progress']];if(isAdmin())tabs.push(['admin','Admin']);
+$('#nav').innerHTML=tabs.map(([k,l])=>`<button data-a="tab" data-c="${k}" class="${view===k?'on':''}">${l}</button>`).join('');
+$('#view').innerHTML=({today:vToday,subjects:vSubjects,planner:vPlanner,progress:vProgress,admin:vAdmin})[view]()}
+const ids=x=>`data-c="${x.c.id}" data-s="${x.s.id}" data-t="${x.t.id}"`;
+function vToday(){const tl=all().filter(x=>!x.t.done&&x.t.date&&x.t.date<=TODAY),rv=revs(),o=pct(all());
+return `<h2>Today, ${P(TODAY).toLocaleDateString('en',{weekday:'long',day:'numeric',month:'long'})}</h2><div class="card"><div class="row"><b>Overall ${o}% complete</b><div class="bar"><i style="width:${o}%"></i></div><button class="ghost sm" data-a="mail">Email me today's plan</button></div></div>
+<div class="card"><h3>Topics to learn (${tl.length})</h3>${tl.map(x=>`<div class="item"><div class="n">${esc(x.t.name)}<div class="mut">${esc(x.c.name)} › ${esc(x.s.name)}${x.t.date<TODAY?' · overdue since '+x.t.date:''}</div></div><button class="pri sm" data-a="learn" ${ids(x)}>Mark learned</button></div>`).join('')||'<p class="mut">All caught up. Plan more in the 6-month plan.</p>'}</div>
+<div class="card"><h3>Revise now (${rv.length})</h3><p class="mut">Revision days after learning: ${REV.join(', ')}</p>${rv.map(x=>`<div class="item"><div class="n">${esc(x.t.name)}<div class="mut">Day ${x.n} revision · ${esc(x.c.name)}</div></div><button class="pri sm" data-a="rev" data-n="${x.n}" ${ids(x)}>Revised</button></div>`).join('')||'<p class="mut">No revisions due today.</p>'}</div>`}
+function vSubjects(){return `<div class="row"><h2>Subjects</h2><button class="pri sp" data-a="addCat">Add category</button></div>`+data.map(c=>{const l=all([c]);return `<div class="card cat ${c.type}"><div class="row"><h3>${esc(c.name)}</h3><span class="mut">${c.type} · ${pct(l)}%</span><div class="bar"><i style="width:${pct(l)}%"></i></div><button class="ghost sm" data-a="addSec" data-c="${c.id}">Add section</button><button class="ghost sm" data-a="editCat" data-c="${c.id}">Edit</button><button class="ghost sm del" data-a="delCat" data-c="${c.id}">Delete</button></div>`+c.secs.map(s=>`<div class="sec"><div class="row"><b>${esc(s.name)}</b><button class="ghost sm" data-a="addTopic" data-c="${c.id}" data-s="${s.id}">Add topic</button><button class="ghost sm" data-a="editSec" data-c="${c.id}" data-s="${s.id}">Edit</button><button class="ghost sm del" data-a="delSec" data-c="${c.id}" data-s="${s.id}">Delete</button></div>`+s.topics.map(t=>`<div class="item"><input type="checkbox" aria-label="Learned" ${t.done?'checked':''} data-a="learn" data-c="${c.id}" data-s="${s.id}" data-t="${t.id}"><div class="n ${t.done?'done':''}">${esc(t.name)}<div class="mut">${t.done?'Learned '+t.doneDate+' · revisions '+t.rev.length+'/6':(t.date?'Planned '+t.date:'Not scheduled')}</div></div><button class="ghost sm" data-a="editTopic" data-c="${c.id}" data-s="${s.id}" data-t="${t.id}">Edit</button><button class="ghost sm del" data-a="delTopic" data-c="${c.id}" data-s="${s.id}" data-t="${t.id}">Delete</button></div>`).join('')+'</div>').join('')+(c.secs.length?'':'<p class="mut">No sections yet. Add one, like Arithmetic or Reasoning.</p>')+'</div>'}).join('')}
+function vPlanner(){const d=new Date(),l=all().filter(x=>x.t.date);let h=`<div class="row"><h2>Next 6 months</h2><button class="pri sp" data-a="spread">Auto-spread unfinished topics</button></div>`;
+for(let i=0;i<6;i++){const m=new Date(d.getFullYear(),d.getMonth()+i,1),k=ymd(m).slice(0,7),ms=l.filter(x=>x.t.date.startsWith(k)).sort((a,b)=>a.t.date<b.t.date?-1:1);
+h+=`<details class="card" ${i===0?'open':''}><summary>${m.toLocaleDateString('en',{month:'long',year:'numeric'})} · ${ms.length} topics</summary>${ms.map(x=>`<div class="item"><span class="mut">${x.t.date.slice(8)}</span><div class="n ${x.t.done?'done':''}">${esc(x.t.name)}<div class="mut">${esc(x.c.name)} › ${esc(x.s.name)}</div></div></div>`).join('')||'<p class="mut">Nothing planned. Add a date when editing a topic.</p>'}</details>`}return h}
+const COL=['#1B998B','#FCA311','#3B5BDB','#D9480F','#9C36B5','#2B8A3E','#C2255C','#0B7285'];
+function donut(sg,ctr){const R=54,C=2*Math.PI*R,tot=sg.reduce((a,s)=>a+s.v,0)||1;let o=0;return `<svg viewBox="0 0 140 140" class="dn" role="img">`+`<circle cx="70" cy="70" r="${R}" fill="none" stroke="var(--line)" stroke-width="22"/>`+sg.map(s=>{const l=s.v/tot*C,e=`<circle cx="70" cy="70" r="${R}" fill="none" stroke="${s.c}" stroke-width="22" stroke-dasharray="${l} ${C-l}" stroke-dashoffset="${-o}" transform="rotate(-90 70 70)"><title>${esc(s.n)}: ${s.v}</title></circle>`;o+=l;return e}).join('')+`<text x="70" y="76" text-anchor="middle" class="ct">${ctr}</text></svg>`}
+function vProgress(){const l=all(),dn=l.filter(x=>x.t.done).length,o=pct(l);
+const days=[...Array(14)].map((_,i)=>add(TODAY,i-13)),cnt=days.map(d=>l.filter(x=>x.t.doneDate===d).length),mx=Math.max(1,...cnt);
+return `<h2>Progress</h2><div class="grid"><div class="card"><h3>Overall</h3><div class="row">${donut([{v:dn,c:'#1B998B',n:'Learned'},{v:l.length-dn,c:'#DDE3EA',n:'Pending'}],o+'%')}<div><div class="lg"><b style="background:#1B998B"></b>Learned ${dn}</div><div class="lg"><b style="background:#DDE3EA"></b>Pending ${l.length-dn}</div></div></div></div>
+<div class="card"><h3>Topics by category</h3><div class="row">${donut(data.map((c,i)=>({v:all([c]).length,c:COL[i%8],n:c.name})),l.length)}<div>${data.map((c,i)=>`<div class="lg"><b style="background:${COL[i%8]}"></b>${esc(c.name)}</div>`).join('')}</div></div></div></div>
+<div class="card"><h3>Completion by category</h3>${data.map(c=>`<div class="item"><div class="n">${esc(c.name)}</div><div class="bar"><i style="width:${pct(all([c]))}%"></i></div><b>${pct(all([c]))}%</b></div>`).join('')}</div>
+<div class="card"><h3>Topics learned, last 14 days</h3><svg viewBox="0 0 336 110" style="width:100%">${cnt.map((v,i)=>`<rect x="${i*24+4}" y="${95-v/mx*80}" width="16" height="${v/mx*80}" rx="3" fill="#FCA311"><title>${days[i]}: ${v}</title></rect><text x="${i*24+12}" y="108" font-size="8" text-anchor="middle" fill="var(--mut)">${days[i].slice(8)}</text>`).join('')}</svg></div>`}
+function vAdmin(){return `<h2>Admin</h2><div class="card"><p class="mut">All registered users. Deleting a user removes their saved data.</p>${adminUsers.map(u=>`<div class="item"><div class="n">${esc(u.username)}${u.is_admin?' (admin)':''}<div class="mut">${esc(u.email)} · ${u.learned}/${u.total} topics learned</div></div>${u.is_admin?'':`<button class="ghost sm del" data-a="udel" data-c="${u.id}">Delete</button>`}</div>`).join('')}</div>`}
+boot();
+</script></body></html>
